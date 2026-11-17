@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "National Venturing Dashboard workbook contract",
+  "contractVersion": 1,
+  "sourceWorkbookIncluded": false,
+  "workbook": {
+    "requiredSheets": ["Dashboard", "Crews", "UnitMetric"],
+    "snapshotDate": {
+      "sheet": "Dashboard",
+      "cell": "B2",
+      "type": "excel-date",
+      "required": true
+    },
+    "sheets": {
+      "Crews": {
+        "headerRow": 1,
+        "grain": "one row per crew",
+        "primaryKey": "Unit_ID",
+        "blankKeyPolicy": "skip-row",
+        "duplicateKeyPolicy": "error",
+        "columns": [
+          {"header": "Unit_ID", "type": "identifier", "required": true, "output": "unitId"},
+          {"header": "CST", "type": "identifier", "required": true, "output": "cst"},
+          {"header": "Council", "type": "string", "required": true, "output": "council"},
+          {"header": "District", "type": "string", "required": false, "output": "district"},
+          {"header": "Crew", "type": "identifier", "required": true, "output": "crewNumber"},
+          {"header": "Renewal", "type": "date", "required": false, "output": "renewalDate"},
+          {"header": "Total Youth", "type": "number", "required": false, "output": "youth"},
+          {"header": "Total Adults", "type": "number", "required": false, "output": "adults"},
+          {"header": "Crew Name", "type": "string", "required": false, "output": "crewName"},
+          {"header": "Primary Youth", "type": "number", "required": false, "output": "primaryYouth"},
+          {"header": "Primary YOY", "type": "number", "required": false, "output": "primaryYoY"},
+          {"header": "Primary to YE", "type": "number", "required": false, "output": "primaryToYearEnd"},
+          {"header": "Unit Metric", "type": "number", "required": false, "output": "unitMetric"},
+          {"header": "Renewal Status", "type": "string", "required": false, "output": "renewalWorkflow"}
+        ]
+      },
+      "UnitMetric": {
+        "headerRow": 1,
+        "grain": "one row per crew",
+        "primaryKey": "UnitID",
+        "blankKeyPolicy": "skip-row",
+        "duplicateKeyPolicy": "unsupported-last-row-wins",
+        "columns": [
+          {"header": "UnitID", "type": "identifier", "required": true, "joinTo": "Crews.Unit_ID"},
+          {"header": "UnitMetric", "type": "number", "required": false, "output": "unitMetric-fallback"},
+          {"header": "Size", "type": "yes-no-blank", "required": false, "output": "sizeHealthy"},
+          {"header": "Growth", "type": "yes-no-blank", "required": false, "output": "growthHealthy"},
+          {"header": "Youth Leadership", "type": "yes-no-blank", "required": false, "output": "leadershipHealthy"},
+          {"header": "Outdoor", "type": "yes-no-blank", "required": false, "output": "outdoorHealthy"},
+          {"header": "UL Trained", "type": "yes-no-blank", "required": false, "output": "unitLeaderTrained"},
+          {"header": "CC Trained", "type": "yes-no-blank", "required": false, "output": "committeeChairTrained"},
+          {"header": "Officers Trained", "type": "yes-no-blank", "required": false, "output": "officersTrained"},
+          {"header": "Retention", "type": "yes-no-blank", "required": false, "output": "retentionHealthy"}
+        ]
+      }
+    }
+  },
+  "join": {
+    "type": "left",
+    "left": "Crews.Unit_ID",
+    "right": "UnitMetric.UnitID",
+    "normalization": "trim-collapse-whitespace-string"
+  },
+  "outputs": ["data/crews.csv", "data/dashboard-data.json"],
+  "excludedFieldFamilies": [
+    "contact names",
+    "email addresses",
+    "phone numbers",
+    "meeting addresses",
+    "websites",
+    "charter-organization fields"
+  ],
+  "derivedRules": {
+    "unitMetricBands": {"strong": ">=4", "watch": ">=2 and <4", "risk": "<2"},
+    "renewalWindowDays": 120,
+    "progressSignals": [
+      "sizeHealthy",
+      "growthHealthy",
+      "leadershipHealthy",
+      "outdoorHealthy",
+      "unitLeaderTrained and committeeChairTrained",
+      "unitMetric >= 3"
+    ],
+    "missingSignalPolicy": "exclude-from-rate-denominator"
+  }
+}

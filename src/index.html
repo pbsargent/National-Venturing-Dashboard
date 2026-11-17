@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="National Venturing dashboard for crew membership, unit health, training, growth, and renewal readiness.">
+    <title>National Venturing Dashboard</title>
+    <link rel="icon" type="image/png" href="assets/venturing-trademark.png">
+    <script>
+      try { document.documentElement.dataset.theme = localStorage.getItem("venturing-dashboard-theme") || "system"; } catch (_) {}
+    </script>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand-lockup">
+        <span class="brand-logo-frame">
+          <img class="brand-logo" src="assets/venturing-trademark.png" alt="Venturing program trademark">
+        </span>
+        <div>
+          <p class="eyebrow">Venturing®</p>
+          <h1>National Venturing Dashboard</h1>
+          <p class="brand-subtitle">Crew health and growth</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span id="updatedAt" class="source-note">Loading workbook snapshot…</span>
+        <a class="header-link" href="../data/crews.csv">CSV</a>
+        <button id="themeButton" class="small-button theme-button" type="button" aria-label="Change color theme">Theme: System</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="toolbar" aria-label="Dashboard filters">
+        <label>
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Crew, council, or district" autocomplete="off">
+        </label>
+        <label>
+          <span>CST</span>
+          <select id="cstFilter"><option value="All">All CSTs</option></select>
+        </label>
+        <label>
+          <span>Council</span>
+          <select id="councilFilter"><option value="All">All councils</option></select>
+        </label>
+        <label>
+          <span>Unit metric</span>
+          <select id="metricFilter">
+            <option value="All">All scores</option>
+            <option value="strong">Strong · 4–5</option>
+            <option value="watch">Watch · 2–3</option>
+            <option value="risk">Risk · 0–1</option>
+          </select>
+        </label>
+        <div class="chips" role="group" aria-label="Quick filters">
+          <button class="chip active" data-quick="all" type="button">All crews</button>
+          <button class="chip" data-quick="growth" type="button">Growing</button>
+          <button class="chip" data-quick="training" type="button">Training gaps</button>
+          <button class="chip" data-quick="renewal" type="button">Renewal window</button>
+        </div>
+      </section>
+
+      <div class="page-shell">
+        <aside class="panel cst-nav" aria-label="CST navigation">
+          <div class="panel-heading"><h2>CST views</h2></div>
+          <button class="cst-link active" type="button" data-cst-nav="All">
+            <strong>National</strong><span id="nationalNavCount">Loading…</span>
+          </button>
+          <a class="cst-link help-link" href="help.html">
+            <strong>Help</strong><span>Sources, measures, and color meanings</span>
+          </a>
+          <div id="cstLinks" class="cst-grid"></div>
+        </aside>
+
+        <div class="dashboard-content">
+          <section class="score-grid" aria-label="Summary metrics">
+            <article class="score"><span>Total crews</span><strong id="crewCount">—</strong><small id="councilCount">—</small></article>
+            <article class="score"><span>Total youth</span><strong id="youthCount">—</strong><small>Current registrations</small></article>
+            <article class="score"><span>Primary youth</span><strong id="primaryYouth">—</strong><small id="primaryDelta">—</small></article>
+            <article class="score"><span>Total adults</span><strong id="adultCount">—</strong><small>Current registrations</small></article>
+            <article class="score"><span>Training coverage</span><strong id="trainingRate">—</strong><small>Unit leader and committee chair</small></article>
+            <article class="score"><span>Average unit metric</span><strong id="averageMetric">—</strong><small>0 to 5 scale</small></article>
+          </section>
+
+          <aside class="panel detail-panel" aria-labelledby="detailHeading">
+            <div class="panel-heading">
+              <div><p class="eyebrow">Crew record</p><h2 id="detailHeading">Crew detail</h2></div>
+              <button id="closeDetail" class="small-button hidden" type="button">Clear selection</button>
+            </div>
+            <div id="crewDetail" class="empty-state">Select a crew in the health board to inspect its membership, training, renewal, and unit-metric fields.</div>
+          </aside>
+
+          <section class="panel board-panel" aria-labelledby="boardHeading">
+            <div class="panel-heading board-heading">
+              <div><p class="eyebrow">Operating view</p><h2 id="boardHeading">CST health board</h2></div>
+              <div class="board-actions">
+                <button id="collapseAll" class="small-button" type="button">Collapse all</button>
+                <button id="expandAll" class="small-button" type="button">Expand all</button>
+                <span id="visibleCount" class="count-pill">0 crews</span>
+              </div>
+            </div>
+            <div class="health-legend" aria-label="Health board legend">
+              <span><i class="legend-swatch good"></i><b>Green</b> Healthy or complete</span>
+              <span><i class="legend-swatch warn"></i><b>Amber</b> Watch or approaching</span>
+              <span><i class="legend-swatch bad"></i><b>Red</b> Attention needed</span>
+              <span><i class="legend-swatch neutral"></i><b>Gray</b> Later or unavailable</span>
+            </div>
+            <div class="board-scroll">
+              <div class="board-header" aria-hidden="true">
+                <span>CST / council</span><span>Progress</span><span>Size</span><span>Growth</span><span>Leadership</span><span>Outdoor</span><span>Training</span><span>Renewal</span><span>Metric</span>
+              </div>
+              <div id="groupRows" class="group-rows" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="diagnostics-grid" aria-label="Dashboard diagnostics">
+            <article class="panel wide">
+              <div class="panel-heading"><div><p class="eyebrow">Membership</p><h2>Primary youth by CST</h2></div></div>
+              <div id="cstYouthBars" class="bar-list"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading"><div><p class="eyebrow">Unit health</p><h2>Unit metric mix</h2></div></div>
+              <div id="metricBars" class="bar-list compact"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading"><div><p class="eyebrow">Membership</p><h2>Growth direction</h2></div></div>
+              <div id="growthBars" class="bar-list compact"></div>
+            </article>
+            <article class="panel wide">
+              <div class="panel-heading"><div><p class="eyebrow">Councils</p><h2>Largest primary-youth councils</h2></div></div>
+              <div id="councilBars" class="bar-list"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading"><div><p class="eyebrow">Renewal</p><h2>Renewal horizon</h2></div></div>
+              <div id="renewalBars" class="bar-list compact"></div>
+            </article>
+          </section>
+
+          <footer class="panel source-panel">
+            <div>
+              <p class="eyebrow">Source and definitions</p>
+              <p id="sourceText">Workbook fields are loading.</p>
+            </div>
+            <p id="privacyText"></p>
+          </footer>
+        </div>
+      </div>
+    </main>
+
+    <script src="app.js?v=20260917-brand-architecture"></script>
+  </body>
+</html>
